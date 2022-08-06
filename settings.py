@@ -1,6 +1,8 @@
 import og_client
 from og_client.api import sprinkler_api, water_api
 
+DEBUG = True
+
 configuration = og_client.Configuration(
     host="api.dev1.og-ingest1.com",
     username='admin',

@@ -6,7 +6,8 @@ name = "pypi"
 [packages]
 streamlit = "*"
 og-client = {git = "https://github.com/One-Green/og-py-openapi-client.git"}
-streamlit-modal = "*"
+influxdb-client = {extras = ["ciso"], version = "*"}
+plotly = "*"
 
 [dev-packages]
 ipython = "*"

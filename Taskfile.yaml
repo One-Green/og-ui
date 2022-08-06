@@ -1,0 +1,23 @@
+# https://taskfile.dev
+
+version: '3'
+
+tasks:
+  default:
+    desc: print task list
+    cmds:
+      - task --list-all
+
+  pf:
+    desc: freeze py requirements.txt
+    cmds:
+      - pipenv run pip freeze > requirements.txt
+  r:
+    desc:  run streamlit
+    cmds:
+      - streamlit run main.py
+
+  i:
+    desc: run ipython
+    cmds:
+      - pipenv run ipython

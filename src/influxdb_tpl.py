@@ -19,3 +19,51 @@ sprinkler_soil_moisture_tpl = Template(
     )
 )
 
+water_ph_level_tpl = Template(
+    common_tpl.safe_substitute(
+        device_type="water",
+        field="ph_level"
+    )
+)
+
+water_ph_voltage_tpl = Template(
+    common_tpl.safe_substitute(
+        device_type="water",
+        field="ph_voltage"
+    )
+)
+
+water_tds_level_tpl = Template(
+    common_tpl.safe_substitute(
+        device_type="water",
+        field="tds_level"
+    )
+)
+
+water_tds_voltage_tpl = Template(
+    common_tpl.safe_substitute(
+        device_type="water",
+        field="tds_voltage"
+    )
+)
+
+water_tank_level = Template(
+    common_tpl.safe_substitute(
+        device_type="water",
+        field="water_tk_lvl"
+    )
+)
+
+water_nutrient_level = Template(
+    common_tpl.safe_substitute(
+        device_type="water",
+        field="nutrient_tk_lvl"
+    )
+)
+
+water_ph_downer_level = Template(
+    common_tpl.safe_substitute(
+        device_type="water",
+        field="ph_downer_tk_lvl"
+    )
+)

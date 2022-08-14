@@ -4,10 +4,9 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
+pandas = "*"
 streamlit = "*"
 og-client = {git = "https://github.com/One-Green/og-py-openapi-client.git"}
-influxdb-client = {extras = ["ciso"], version = "*"}
-plotly = "*"
 
 [dev-packages]
 ipython = "*"

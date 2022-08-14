@@ -62,7 +62,7 @@ with sensors_tab:
         st.metric("Created since", f'{created_dt}')
 
     with st.spinner('Plotting chart ...'):
-        query = sprinkler_soil_moisture_tpl.format(
+        query = sprinkler_soil_moisture_tpl.substitute(
             bucket=influxdb_bucket,
             tag=device_tag,
             historic=10,

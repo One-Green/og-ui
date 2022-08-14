@@ -7,6 +7,8 @@ name = "pypi"
 pandas = "*"
 streamlit = "*"
 og-client = {git = "https://github.com/One-Green/og-py-openapi-client.git"}
+plotly = "*"
+influxdb-client = "*"
 
 [dev-packages]
 ipython = "*"

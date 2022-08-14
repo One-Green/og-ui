@@ -2,11 +2,13 @@ import pytz
 import pandas as pd
 import streamlit as st
 from datetime import datetime
+import plotly.graph_objects as go
 from og_client import exceptions
 from og_client.model.sprinkler_configuration import SprinklerConfiguration
 from og_client.model.sprinkler_force_controller import SprinklerForceController
-from settings import og_sprinkler_client, og_water_client, DEBUG
+from settings import og_sprinkler_client, og_water_client, DEBUG, influx_client, influxdb_bucket, influxdb_org
 from src.force import BinaryForceControl, ForceStatus
+from src.influxdb_tpl import sprinkler_soil_moisture_tpl
 
 st.set_page_config(
     page_title="Sprinkler", page_icon="⛲",
@@ -14,11 +16,7 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-st.markdown(
-    """
-    # ⛲ Sprinkler Config
-    """
-)
+st.markdown("# ⛲ Sprinkler Config")
 with st.spinner('Retrieving sprinklers ...'):
     r = og_sprinkler_client.sprinkler_device_list().to_dict()
     if DEBUG:
@@ -26,7 +24,7 @@ with st.spinner('Retrieving sprinklers ...'):
 
     spk_device_tag = pd.DataFrame(
         r['results']
-    )
+    ).sort_values(by=['tag'])
 
 with st.spinner('Retrieving water(s) ...'):
     r = og_water_client.water_device_list().to_dict()
@@ -34,46 +32,73 @@ with st.spinner('Retrieving water(s) ...'):
         st.json(r, expanded=False)
     wt_device_tag = pd.DataFrame(
         r['results']
-    )
+    ).sort_values(by=["tag"])
 
 try:
-    device_tag = st.selectbox(label="Select tag", options=spk_device_tag['tag'])
+    device_tag = st.selectbox(label="Select device tag", options=spk_device_tag['tag'])
     device_id = int(spk_device_tag[spk_device_tag['tag'].str.match(device_tag)].id)
+    if st.button("Refresh device list"):
+        st.experimental_rerun()
+
 except KeyError:
     st.warning('No device(s) found ... ')
-
 
 sensors_tab, settings_tab, force_tab = st.tabs(["Sensors", "Settings", "Force"])
 
 with sensors_tab:
-    sensor = og_sprinkler_client.sprinkler_sensor_list(search=device_tag).to_dict()
+    if st.button("Refresh sensor(s)"):
+        st.experimental_rerun()
+    sensor = og_sprinkler_client.sprinkler_sensor_list(search=device_tag).to_dict()["results"][0]
     if DEBUG:
         st.json(sensor, expanded=False)
     s_col1, s_col2 = st.columns(2)
 
     with s_col1:
-        st.metric("Soil Moisture", f'{sensor["results"][0]["soil_moisture"]} %')
-        dt = datetime.utcnow().replace(tzinfo=pytz.utc) - sensor["results"][0]["updated_at"]
+        st.metric("Soil Moisture", f'{sensor["soil_moisture"]} %')
+        dt = datetime.utcnow().replace(tzinfo=pytz.utc) - sensor["updated_at"]
         st.metric("Last update", f'{dt.seconds} seconds')
     with s_col2:
-        st.metric("Soil Moisture ADC", f'{sensor["results"][0]["soil_moisture_raw_adc"]}')
-        created_dt = datetime.utcnow().replace(tzinfo=pytz.utc) - sensor["results"][0]["created_at"]
+        st.metric("Soil Moisture ADC", f'{sensor["soil_moisture_raw_adc"]}')
+        created_dt = datetime.utcnow().replace(tzinfo=pytz.utc) - sensor["created_at"]
         st.metric("Created since", f'{created_dt}')
-    if st.button("Refresh"):
-        st.experimental_rerun()
+
+    with st.spinner('Plotting chart ...'):
+        query = sprinkler_soil_moisture_tpl.format(
+            bucket=influxdb_bucket,
+            tag=device_tag,
+            historic=10,
+        )
+        try:
+            df = influx_client.query_api().query_data_frame(org=influxdb_org, query=query)[0]
+            if not df.empty:
+                fig = go.Figure(
+                    data=[
+                        go.Scatter(
+                            x=df['_time'],
+                            y=df['_value'],
+                        )
+                    ],
+                    layout_yaxis_range=[0, 100]
+                )
+                st.plotly_chart(fig, use_container_width=True)
+            else:
+                st.warning("Not data found")
+        except KeyError:
+            st.warning("Can't plot chart, unable to retrieve data")
+
 
 with settings_tab:
     with st.spinner('Retrieving sprinkler config'):
-        device_config = og_sprinkler_client.sprinkler_config_list(search=device_tag).to_dict()
+        device_config = og_sprinkler_client.sprinkler_config_list(search=device_tag).to_dict()['results'][0]
     if DEBUG:
         st.json(device_config, expanded=False)
-    device_config_id = device_config['results'][0]['id']
+    device_config_id = device_config['id']
 
     col1, col2 = st.columns(2)
     with col1:
         min_lvl = st.number_input(
             "Humidity min level",
-            value=device_config['results'][0]['soil_moisture_min_level'],
+            value=device_config['soil_moisture_min_level'],
             step=1.0,
             min_value=0.0,
             max_value=100.0
@@ -81,7 +106,7 @@ with settings_tab:
     with col2:
         max_lvl = st.number_input(
             "Humidity max level",
-            value=device_config['results'][0]['soil_moisture_max_level'],
+            value=device_config['soil_moisture_max_level'],
             step=1.0,
             min_value=0.0,
             max_value=100.0

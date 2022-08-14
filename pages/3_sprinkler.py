@@ -39,7 +39,6 @@ try:
     device_id = int(spk_device_tag[spk_device_tag['tag'].str.match(device_tag)].id)
     if st.button("Refresh device list"):
         st.experimental_rerun()
-
 except KeyError:
     st.warning('No device(s) found ... ')
 

@@ -3,15 +3,22 @@
 version: '3'
 
 tasks:
+
   default:
     desc: print task list
     cmds:
       - task --list-all
 
+  ogc:
+    desc: force re install og py client
+    cmds:
+      - pipenv run pip install git+https://github.com/One-Green/og-py-openapi-client.git#egg=og-client --force-reinstall
+
   pf:
     desc: freeze py requirements.txt
     cmds:
       - pipenv run pip freeze > requirements.txt
+
   r:
     desc:  run streamlit
     cmds:

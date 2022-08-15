@@ -6,7 +6,7 @@ import plotly.graph_objects as go
 from og_client import exceptions
 from og_client.model.sprinkler_configuration import SprinklerConfiguration
 from og_client.model.sprinkler_force_controller import SprinklerForceController
-from settings import og_sprinkler_client, og_water_client, DEBUG, influx_client, influxdb_bucket, influxdb_org
+from settings import og_sprinkler_client, og_water_client, DEBUG, CHART, influx_client, influxdb_bucket, influxdb_org
 from src.force import BinaryForceControl, ForceStatus
 from src.influxdb_tpl import sprinkler_soil_moisture_tpl
 
@@ -61,30 +61,30 @@ with sensors_tab:
         created_dt = datetime.utcnow().replace(tzinfo=pytz.utc) - sensor["created_at"]
         st.metric("Created since", f'{created_dt}')
 
-    with st.spinner('Plotting chart ...'):
-        query = sprinkler_soil_moisture_tpl.substitute(
-            bucket=influxdb_bucket,
-            tag=device_tag,
-            historic=10,
-        )
-        try:
-            df = influx_client.query_api().query_data_frame(org=influxdb_org, query=query)[0]
-            if not df.empty:
-                fig = go.Figure(
-                    data=[
-                        go.Scatter(
-                            x=df['_time'],
-                            y=df['_value'],
-                        )
-                    ],
-                    layout_yaxis_range=[0, 100]
-                )
-                st.plotly_chart(fig, use_container_width=True)
-            else:
-                st.warning("Not data found")
-        except KeyError:
-            st.warning("Can't plot chart, unable to retrieve data")
-
+    if CHART:
+        with st.spinner('Plotting chart ...'):
+            query = sprinkler_soil_moisture_tpl.substitute(
+                bucket=influxdb_bucket,
+                tag=device_tag,
+                historic=10,
+            )
+            try:
+                df = influx_client.query_api().query_data_frame(org=influxdb_org, query=query)[0]
+                if not df.empty:
+                    fig = go.Figure(
+                        data=[
+                            go.Scatter(
+                                x=df['_time'],
+                                y=df['_value'],
+                            )
+                        ],
+                        layout_yaxis_range=[0, 100]
+                    )
+                    st.plotly_chart(fig, use_container_width=True)
+                else:
+                    st.warning("Not data found")
+            except KeyError:
+                st.warning("Can't plot chart, unable to retrieve data")
 
 with settings_tab:
     with st.spinner('Retrieving sprinkler config'):
@@ -92,6 +92,7 @@ with settings_tab:
     if DEBUG:
         st.json(device_config, expanded=False)
     device_config_id = device_config['id']
+    water_source_tag = wt_device_tag[wt_device_tag['id'] == device_config["water_tag_link"]].tag.values[0]
 
     col1, col2 = st.columns(2)
     with col1:
@@ -111,7 +112,12 @@ with settings_tab:
             max_value=100.0
         )
 
-    water_tag_link_tag = st.selectbox(label="Select water source", options=wt_device_tag['tag'])
+    st.info(f"This sprinkler use water source '{water_source_tag}' ")
+
+    water_tag_link_tag = st.selectbox(
+        label=f"Change water source",
+        options=wt_device_tag['tag']
+    )
     water_tag_link_id = int(wt_device_tag[wt_device_tag['tag'].str.match(water_tag_link_tag)].id)
 
     if st.button("Save", key="save_config"):
@@ -124,6 +130,7 @@ with settings_tab:
         with st.spinner('Updating configuration'):
             og_sprinkler_client.sprinkler_config_update(device_config_id, data)
             st.success("Saved successfully")
+        st.experimental_rerun()
 
 with force_tab:
     st.markdown("### Valve")

@@ -3,6 +3,7 @@ from og_client.api import sprinkler_api, water_api
 from influxdb_client import InfluxDBClient
 
 DEBUG = True
+CHART = True
 
 # One-Green Core Api configurations
 configuration = og_client.Configuration(

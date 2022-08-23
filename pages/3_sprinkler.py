@@ -6,7 +6,7 @@ import plotly.graph_objects as go
 from og_client import exceptions
 from og_client.model.sprinkler_configuration import SprinklerConfiguration
 from og_client.model.sprinkler_force_controller import SprinklerForceController
-from settings import og_sprinkler_client, og_water_client, DEBUG, CHART, influx_client, influxdb_bucket, influxdb_org
+from settings import og_sprinkler_client, og_water_client, DEBUG, CHART, influx_client, INFLUXDB_BUCKET, INFLUXDB_ORG
 from src.force import BinaryForceControl, ForceStatus
 from src.influxdb_tpl import sprinkler_soil_moisture_tpl
 
@@ -64,12 +64,12 @@ with sensors_tab:
     if CHART:
         with st.spinner('Plotting chart ...'):
             query = sprinkler_soil_moisture_tpl.substitute(
-                bucket=influxdb_bucket,
+                bucket=INFLUXDB_BUCKET,
                 tag=device_tag,
                 historic=10,
             )
             try:
-                df = influx_client.query_api().query_data_frame(org=influxdb_org, query=query)[0]
+                df = influx_client.query_api().query_data_frame(org=INFLUXDB_ORG, query=query)[0]
                 if not df.empty:
                     fig = go.Figure(
                         data=[

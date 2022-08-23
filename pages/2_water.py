@@ -5,7 +5,7 @@ import plotly.graph_objects as go
 from og_client import exceptions
 from og_client.model.water_configuration import WaterConfiguration
 from og_client.model.water_force_controller import WaterForceController
-from settings import og_sprinkler_client, og_water_client, DEBUG, CHART, influx_client, influxdb_bucket, influxdb_org
+from settings import og_sprinkler_client, og_water_client, DEBUG, CHART, influx_client, INFLUXDB_BUCKET, INFLUXDB_ORG
 from src.force import BinaryForceControl, ForceStatus
 from src.influxdb_tpl import (
     water_ph_level_tpl,
@@ -103,9 +103,9 @@ with sensors_tab:
                     influx_client
                     .query_api()
                     .query_data_frame(
-                        org=influxdb_org,
+                        org=INFLUXDB_ORG,
                         query=water_ph_level_tpl.substitute(
-                            bucket=influxdb_bucket,
+                            bucket=INFLUXDB_BUCKET,
                             tag=device_tag,
                             historic=10,
                         ))[0])
@@ -113,9 +113,9 @@ with sensors_tab:
                     influx_client
                     .query_api()
                     .query_data_frame(
-                        org=influxdb_org,
+                        org=INFLUXDB_ORG,
                         query=water_tds_level_tpl.substitute(
-                            bucket=influxdb_bucket,
+                            bucket=INFLUXDB_BUCKET,
                             tag=device_tag,
                             historic=10,
                         ))[0])
